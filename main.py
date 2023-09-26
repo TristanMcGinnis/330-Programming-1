@@ -166,7 +166,6 @@ with open("outputFile.txt", "w") as outFile:
    while (Time < stop_time):
       Time += delta_time
       for c in characters:
-         c.update(delta_time)
          outFile.write(f'{Time}, {c.id}, {c.pos[0]}, {c.pos[1]}, {c.vel[0]}, {c.vel[1]}, {c.accel[0]}, {c.accel[1]}, {c.orientation}, {c.behavior}, {c.collided} \n')
          print(f'{Time}, {c.id}, {c.pos[0]}, {c.pos[1]}, {c.vel[0]}, {c.vel[1]}, {c.accel[0]}, {c.accel[1]}, {c.orientation}, {c.behavior}, {c.collided}')
-      
+         c.update(delta_time)   
