@@ -50,10 +50,12 @@ class Character:
       self.collided = False #Currently remains false
 
       self.arriveTime = time2target
-      self.slowTime = .05 #Hardcoded to 0.5 because I think that's what the lectures recommended
+      self.slowTime = 0.5 #Hardcoded to 0.5 because I think that's what the lectures recommended
       self.arriveRadius = arriveRadius
       self.slowRadius = slowRadius
       self.time2target = time2target
+
+      self.stop_velocity = 0.02
 
    #Function of class character so you can just pass self to access attributes
    #Computes all value changes upon updates
@@ -64,20 +66,20 @@ class Character:
          result = Steering(self.accel, self.angular)
 
          return result
-      if self.behavior == 6: #Seek
+      elif self.behavior == 6: #Seek
 
          result.linear = self.target.pos - self.pos
          result.angular = 0
 
-         linearArray = result.linear
-         linearArray = np.array(linearArray)
+         #linearArray = result.linear
+         linearArray = np.array(result.linear)
       
          #print(f'char to targe pos: {self.pos} to {self.target.pos} is {result.linear}')
          result.linear = result.linear/np.linalg.norm(linearArray)
          result.linear = result.linear * self.maxLin
          
          return result
-      if self.behavior == 7: #Flee
+      elif self.behavior == 7: #Flee
 
          result.linear = self.pos - self.target.pos
          result.angular = 0
@@ -90,7 +92,7 @@ class Character:
          result.linear = result.linear * self.maxLin
          
          return result
-      if self.behavior == 8: #Arrive
+      elif self.behavior == 8: #Arrive
          direction = self.target.pos - self.pos
          distance = magnitude(np.array(direction))
 
@@ -99,12 +101,15 @@ class Character:
          elif distance > self.slowRadius:
             arriveSpeed = self.maxVel
          else:
-            arriveSpeed = self.maxVel * distance / self.slowTime
+            arriveSpeed = self.maxVel * distance / self.slowRadius
 
 
          arriveSpeed = ((np.array(direction))/np.linalg.norm(direction)) * arriveSpeed
          result.linear = arriveSpeed - self.vel
          result.linear = result.linear / self.arriveTime
+
+         if (magnitude(self.vel) < self.stop_velocity):
+            self.velocity = [0,0]
 
          if magnitude(result.linear) > self.maxLin:
             result.linear = result.linear/np.linalg.norm(result.linear)
@@ -117,13 +122,15 @@ class Character:
    #Updates values for characters based on those received from it's steering behavior
    #This is also a function of the Character class in order to access all attributes simply by passing self
    def update(self, delta_time): #delta_time should be 0.5 for half second time steps
+      
+      steering = self.getSteering()
+
       self.pos = self.pos + (self.vel * delta_time) #Might just seperate into X and Z calls
       self.orientation = self.orientation + (self.rotation * delta_time)
 
       self.orientation = self.orientation % (2*np.pi)
 
-      steering = self.getSteering()
-
+      
       self.vel = self.vel + (steering.linear * delta_time)
       self.rotation = self.rotation + (steering.angular * delta_time)
 
@@ -134,11 +141,12 @@ class Character:
       #Checks for breaching maximums
       if abs(magnitude(self.vel)) > self.maxVel:
          print(f'{self.id} surpassed max Velocity at {magnitude(self.vel)}, max: {self.maxVel}')
-         self.vel = self.maxVel * self.vel/np.linalg.norm(self.vel)
+         self.vel = self.maxVel * (self.vel/np.linalg.norm(self.vel))
+         #self.vel = self.maxVel * (testArray/magnitude(testArray))
 
       if abs(magnitude(self.accel)) > self.maxLin:
          print(f'{self.id} surpassed max Linear Accel at {magnitude(self.accel)}, max: {self.maxLin}')
-         self.accel = self.maxLin * self.accel/np.linalg.norm(self.accel)
+         #self.accel = self.maxLin * self.accel/np.linalg.norm(self.accel) 
       
       if abs(self.rotation) > self.maxRotation:
          print(f'{self.id} surpassed max Rotation at {magnitude(self.rotation)}, max: {self.maxRotation}')
@@ -150,7 +158,7 @@ class Character:
 
 #Parameters for the run
 delta_time = 0.5
-Time = -delta_time
+Time = 0 
 stop_time = 50
 
 #self, id, behavior, posX, posZ, velX, velZ, orientation, maxVel, maxAccel, target, arriveRadius, slowRadius, time2target
@@ -159,13 +167,14 @@ character2 = Character(2602, 7, -30, -50, 2, 7, (np.pi)/4.0, 8, 1.5, character1,
 
 #I'm unsure why, at this time, character3's trajectory around target wraps so much tighter than the desired
 character3 = Character(2603, 6, -50, 40, 0, 8, (3*np.pi)/2.0, 8, 2, character1, 0, 0, 0)
+
 character4 = Character(2604, 8, 50, 75, -9, 4, np.pi, 10, 2, character1, 4, 32, 1)
 characters = [character1, character2, character3, character4]
 
 with open("outputFile.txt", "w") as outFile:
    while (Time < stop_time):
-      Time += delta_time
       for c in characters:
          outFile.write(f'{Time}, {c.id}, {c.pos[0]}, {c.pos[1]}, {c.vel[0]}, {c.vel[1]}, {c.accel[0]}, {c.accel[1]}, {c.orientation}, {c.behavior}, {c.collided} \n')
          print(f'{Time}, {c.id}, {c.pos[0]}, {c.pos[1]}, {c.vel[0]}, {c.vel[1]}, {c.accel[0]}, {c.accel[1]}, {c.orientation}, {c.behavior}, {c.collided}')
-         c.update(delta_time)   
+         c.update(delta_time)
+      Time += delta_time
